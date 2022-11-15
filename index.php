@@ -1,13 +1,5 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-ini_set("track_errors", 1);
-ini_set("html_errors", 1);
-error_reporting(E_ALL);
-
 require_once "vendor/SleekDB/src/Store.php";
-//phpinfo();
-//exit();
 
 // Set headers
 header('Content-Type: application/json; charset=utf-8');
@@ -60,11 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     return;
   }
 
-  //var_dump(exec("/Applications/MAMP/bin/php/php7.4.16/bin /Volumes/TRON1/htdocs/pdfjeff/utils/generate-images.php '".$id."' ".$resolution." &"));
-  //var_dump(exec('/Applications/MAMP/bin/php/php7.4.16/bin /Volumes/TRON1/htdocs/pdfjeff/utils/generate-images.php', $id, $resolution));
-  //var_dump("php /Volumes/TRON1/htdocs/pdfjeff/utils/generate-images.php '".$id."' ".$resolution." &");
-  //exec("php utils/generate-images.php '" . $id . "' ". $resolution . " &");
-
   // Save process to database
   $process = [
     "id" => $id,
@@ -79,28 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   //var_dump($info);
 
 
-  //$updateddbprocess = $processes->updateById($dbprocess["_id"], ["status" => "done"]);
-
-  //print_r($updateddbprocess);
-
-  //var_dump($info);
-  //exec("/Applications/MAMP/bin/php/php7.4.16/bin /Volumes/TRON1/htdocs/pdfjeff/utils/generate-images.php '" . $id . "' ". $resolution . " &");
-
-  /*$image = new Imagick();
-  $image->pingImage('data/' . $id . '/jeff.pdf');
-  $pages = $image->getNumberImages();
-  $images = array();
-  for($i=0; $i < $pages; $i++) {
-    $imagick = new Imagick();
-    $imagick->setResolution($resolution,$resolution);
-    $imagick->readImage('data/' . $id . '/jeff.pdf[' . $i . ']');
-    $imagick->writeImage('data/' . $id . '/images/' . $i . '.jpg');
-    $images[] = 'data/' . $id . '/images/' . $i . '.jpg';
-  }*/
-
-  // header ok
   header("HTTP/1.1 200 OK");
-  //echo json_encode(array('status' => 'Success', 'message' => 'Images generated.', 'id' => $id, 'images' => $images));
   echo json_encode(array('status' => 'Processing', 'message' => 'Images are being generated.', 'id' => $id));
 
   return;
@@ -109,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   //exec('rm -rf data/' . $id);
 }
 else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+  // Fail with error if no ID is given
   $id = isset($_GET['id']) ? $_GET['id'] : null;
   if ($id == null) {
     header("HTTP/1.1 400 Bad Request");
@@ -116,23 +83,18 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     return;
   }
 
+  // Find process in database
   $process = $processes->findOneBy(["id", "=", $id]);
 
-  //$updateddbprocess = $processes->updateById($process["_id"], ["images" => "dis"]);
-  //var_dump($process);
-
+  // Fail with error if process is not found
   if ($process == null) {
-    header("HTTP/1.1 400 Bad Request");
-    echo json_encode(array('status' => 'Error', 'statusCode' => 400, 'message' => 'Process not found.'));
+    header("HTTP/1.1 404 Not Found");
+    echo json_encode(array('status' => 'Error', 'statusCode' => 404, 'message' => 'Process not found.'));
     return;
   }
 
   header("HTTP/1.1 200 OK");
-  echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'Doing something', 'images' => $process['images']));
-
-  //header("HTTP/1.1 400 Bad Request");
-  //echo json_encode(array('status' => 'Error', 'statusCode' => 400, 'message' => 'Only POST requests are allowed.'));
-  //return;
+  echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file has finished processing. Images will automatically expire after 30 minutes.', 'images' => $process['images']));
 }
 
 ?>
