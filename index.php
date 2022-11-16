@@ -70,8 +70,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Generate images
   $info = shell_exec("php utils/generate-images.php '" . $id . "' ". $resolution . " " . $results['_id'] . " >/dev/null 2>&1 &");
-  //$info = shell_exec("php utils/generate-images.php '" . $id . "' ". $resolution . " " . $results['_id'] . " &");
-  //var_dump($info);
 
   header("HTTP/1.1 200 OK");
   echo json_encode(array('status' => 'Processing', 'message' => 'Images are being generated.', 'id' => $id));
@@ -97,15 +95,17 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     return;
   }
 
-  header("HTTP/1.1 200 OK");
   if($process['status'] === 'processing') {
+    header("HTTP/1.1 200 OK");
     echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file is currently being processed.', 'images' => isset($process['images']) ? $process['images'] : null));
   }
   elseif($process['status'] === 'done') {
+    header("HTTP/1.1 200 OK");
     echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file has finished processing. Images will automatically expire after 30 minutes.', 'images' => isset($process['images']) ? $process['images'] : null));
   }
   elseif($process['status'] === 'failed') {
-    echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file failed to process, please try again.', 'images' => isset($process['images']) ? $process['images'] : null));
+    header("HTTP/1.1 500 Internal Server Error");
+    echo json_encode(array('status' => $process['status'], 'statusCode' => 500, 'message' => 'This file failed to process, please try again.', 'images' => isset($process['images']) ? $process['images'] : null));
   }
 }
 
