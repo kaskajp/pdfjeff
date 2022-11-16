@@ -4,9 +4,16 @@ require_once "vendor/SleekDB/src/Store.php";
 // Set headers
 header('Content-Type: application/json; charset=utf-8');
 
-// Datbase
+// Database
 $databaseDirectory = __DIR__ . "/database";
 $processes = new \SleekDB\Store("processes", $databaseDirectory);
+
+// Clear expired processes
+$expiredProcesses = $processes->deleteBy(["timestamp", "<", (strtotime("-30 seconds"))], 2);
+for ($i = 0; $i < count($expiredProcesses); $i++) {
+  // Delete directory and files for expired process
+  exec('rm -rf data/' . $expiredProcesses[$i]["id"]);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Decode JSON from request body
@@ -56,7 +63,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $process = [
     "id" => $id,
     "resolution" => $resolution,
-    "status" => "processing"
+    "status" => "processing",
+    "timestamp" => strtotime("now")
   ];
   $results = $processes->insert($process);
 
@@ -65,14 +73,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   //$info = shell_exec("php utils/generate-images.php '" . $id . "' ". $resolution . " " . $results['_id'] . " &");
   //var_dump($info);
 
-
   header("HTTP/1.1 200 OK");
   echo json_encode(array('status' => 'Processing', 'message' => 'Images are being generated.', 'id' => $id));
 
   return;
-
-  // Delete directory
-  //exec('rm -rf data/' . $id);
 }
 else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   // Fail with error if no ID is given
@@ -94,7 +98,15 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   }
 
   header("HTTP/1.1 200 OK");
-  echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file has finished processing. Images will automatically expire after 30 minutes.', 'images' => $process['images']));
+  if($process['status'] === 'processing') {
+    echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file is currently being processed.', 'images' => isset($process['images']) ? $process['images'] : null));
+  }
+  elseif($process['status'] === 'done') {
+    echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file has finished processing. Images will automatically expire after 30 minutes.', 'images' => isset($process['images']) ? $process['images'] : null));
+  }
+  elseif($process['status'] === 'failed') {
+    echo json_encode(array('status' => $process['status'], 'statusCode' => 200, 'message' => 'This file failed to process, please try again.', 'images' => isset($process['images']) ? $process['images'] : null));
+  }
 }
 
 ?>
