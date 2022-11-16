@@ -1,4 +1,5 @@
 <?php
+require_once "utils/config.php";
 require_once "vendor/SleekDB/src/Store.php";
 
 // Set headers
@@ -9,7 +10,7 @@ $databaseDirectory = __DIR__ . "/database";
 $processes = new \SleekDB\Store("processes", $databaseDirectory);
 
 // Clear expired processes
-$expiredProcesses = $processes->deleteBy(["timestamp", "<", (strtotime("-30 seconds"))], 2);
+$expiredProcesses = $processes->deleteBy(["timestamp", "<", (strtotime(EXPIRE_TIME))], 2);
 for ($i = 0; $i < count($expiredProcesses); $i++) {
   // Delete directory and files for expired process
   exec('rm -rf data/' . $expiredProcesses[$i]["id"]);
